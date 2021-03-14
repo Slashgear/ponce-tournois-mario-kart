@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Router, Switch, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet';
+import { AnimatePresence } from 'framer-motion';
 import moment from 'moment';
 import Signup from './components/auth/Signup';
 import Signin from './components/auth/Signin';
 import history from './utils/history';
 import Header from './components/utils/Header';
+import ScrollToTop from './components/utils/ScrollToTop';
 import AdminWrapper from './components/admin/AdminWrapper';
 import AdminRoute from './components/auth/AdminRoute';
 import PonceParticipations from './components/participations/PonceParticipations';
@@ -107,12 +109,16 @@ function App() {
                 defaultTitle="Tournoi des fleurs"
             />
 
-            {showLatestPatchNote && (
-                <LatestPatchNote
-                    patchNote={latestPatchNote}
-                    onClose={closePatchNote}
-                />
-            )}
+            <ScrollToTop />
+
+            <AnimatePresence>
+                {showLatestPatchNote && (
+                    <LatestPatchNote
+                        patchNote={latestPatchNote}
+                        onClose={closePatchNote}
+                    />
+                )}
+            </AnimatePresence>
 
             <div className="container">
                 <Header />
