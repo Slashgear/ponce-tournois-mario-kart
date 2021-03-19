@@ -3,7 +3,9 @@ import { Router, Switch, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet';
 import { AnimatePresence } from 'framer-motion';
+import { SkeletonTheme } from 'react-loading-skeleton';
 import moment from 'moment';
+
 import Signup from './components/auth/Signup';
 import Signin from './components/auth/Signin';
 import history from './utils/history';
@@ -29,15 +31,21 @@ import {
     setTournamentsError,
 } from './redux/actions/tournaments';
 import UserWrapper from './components/user/UserWrapper';
-import { fetchLatestPatchNote } from './redux/actions/patchNotes';
+import {
+    fetchLatestPatchNote,
+    fetchPatchNotes,
+} from './redux/actions/patchNotes';
 import LatestPatchNote from './components/patchNotes/LatestPatchNote';
 import CGU from './components/utils/CGU';
+import { fetchTheme } from './redux/actions/settings';
+import { CSSTheme } from './utils/style';
 
 function App() {
     const [showLatestPatchNote, setShowLatestPatchNote] = useState(false);
 
     const dispatch = useDispatch();
     const { loading, user } = useSelector((state) => state.auth);
+    const { theme } = useSelector((state) => state.settings);
     const { socket } = useSelector((state) => state.socket);
     const { latest: latestPatchNote } = useSelector(
         (state) => state.patchNotes
@@ -46,7 +54,9 @@ function App() {
     useEffect(() => {
         dispatch(fetchUser());
         dispatch(fetchTracks());
+        dispatch(fetchPatchNotes());
         dispatch(fetchLatestPatchNote());
+        dispatch(fetchTheme());
     }, []);
 
     useEffect(() => {
@@ -111,43 +121,55 @@ function App() {
 
             <ScrollToTop />
 
-            <AnimatePresence>
-                {showLatestPatchNote && (
-                    <LatestPatchNote
-                        patchNote={latestPatchNote}
-                        onClose={closePatchNote}
-                    />
-                )}
-            </AnimatePresence>
-
             <div className="container">
-                <Header />
-                <Analytics />
-                <Switch>
-                    <Route exact path="/signup" component={Signup} />
-                    <Route exact path="/signin" component={Signin} />
+                <SkeletonTheme
+                    color={CSSTheme[theme].secondaryBackgroundColor}
+                    highlightColor={CSSTheme[theme].borderColor}
+                >
+                    <AnimatePresence>
+                        {showLatestPatchNote && (
+                            <LatestPatchNote
+                                patchNote={latestPatchNote}
+                                onClose={closePatchNote}
+                            />
+                        )}
+                    </AnimatePresence>
 
-                    <Route exact path="/" component={Home} />
-                    <Route
-                        exact
-                        path="/history"
-                        component={PonceParticipations}
-                    />
-                    <Route exact path="/races" component={PonceRaces} />
-                    <Route
-                        exact
-                        path="/statistics"
-                        component={PonceStatistics}
-                    />
+                    <Header />
+                    <Analytics />
+                    <Switch>
+                        <Route exact path="/signup" component={Signup} />
+                        <Route exact path="/signin" component={Signin} />
 
-                    <Route path="/users/:username" component={UserWrapper} />
+                        <Route exact path="/" component={Home} />
+                        <Route
+                            exact
+                            path="/history"
+                            component={PonceParticipations}
+                        />
+                        <Route exact path="/races" component={PonceRaces} />
+                        <Route
+                            exact
+                            path="/statistics"
+                            component={PonceStatistics}
+                        />
 
-                    <PrivateRoute exact path="/settings" component={Settings} />
+                        <Route
+                            path="/users/:username"
+                            component={UserWrapper}
+                        />
 
-                    <AdminRoute path="/admin" component={AdminWrapper} />
+                        <PrivateRoute
+                            exact
+                            path="/settings"
+                            component={Settings}
+                        />
 
-                    <Route exact path="/cgu" component={CGU} />
-                </Switch>
+                        <AdminRoute path="/admin" component={AdminWrapper} />
+
+                        <Route exact path="/cgu" component={CGU} />
+                    </Switch>
+                </SkeletonTheme>
             </div>
             <Footer />
         </Router>
