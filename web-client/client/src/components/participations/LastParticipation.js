@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import _ from 'lodash';
 import { useSelector } from 'react-redux';
 import { Col, Row } from 'react-grid-system';
@@ -26,11 +26,8 @@ function LastParticipation({ route, userId }) {
     const canAdd = user ? user.id === userId || user.isAdmin : false;
 
     socket.off('editParticipation').on('editParticipation', (p) => {
-        if (participation && p.id === participation.id) {
-            const newParticipation = _.cloneDeep(participation);
-            newParticipation.goal = p.goal;
-            setParticipation(newParticipation);
-        }
+        if (participation && p.id === participation.id)
+            setParticipation({ ...participation, ...p });
     });
 
     socket.off('addRace').on('addRace', (race) => {
@@ -53,21 +50,13 @@ function LastParticipation({ route, userId }) {
 
     socket.off(route).on(route, (p) => {
         const [participation, ...participations] = p;
-        const participationsWithNbPoints = getParticipationsWithNbPoints(
-            participations
-        );
-        const record = getRecord(participationsWithNbPoints);
-        const worst = getWorst(participationsWithNbPoints);
+        const record = getRecord(participations);
+        const worst = getWorst(participations);
 
         if (record?.id !== worst?.id) setWorst(worst);
-        if (participationsWithNbPoints.length > 1) {
-            setAverage(
-                getAverage(
-                    participationsWithNbPoints,
-                    participation.Tournament.nbMaxRaces
-                )
-            );
-        }
+        setAverage(
+            getAverage(participations, participation.Tournament.nbMaxRaces)
+        );
         setRecord(record);
         setParticipation(participation);
         setLoading(false);

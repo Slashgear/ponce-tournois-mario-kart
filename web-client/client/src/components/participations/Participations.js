@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Container, Row, Col } from 'react-grid-system';
+import { useHistory, useLocation } from 'react-router-dom';
+import queryString from 'query-string';
 import _ from 'lodash';
 import { useSelector } from 'react-redux';
 import TournamentInfos from '../tournaments/TournamentInfos';
@@ -15,14 +17,12 @@ function Participations({ route, canAdd, userId }) {
     const [participation, setParticipation] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const history = useHistory();
+    const { search } = useLocation();
 
     socket.off('editParticipation').on('editParticipation', (participation) => {
         const p = _.find(participations, { id: participation.id });
-        if (p) {
-            const newParticipation = _.cloneDeep(p);
-            newParticipation.goal = participation.goal;
-            refreshParticipation(newParticipation);
-        }
+        if (p) refreshParticipation({ ...p, ...participation });
     });
 
     socket.off('addRace').on('addRace', (race) => {
@@ -77,9 +77,14 @@ function Participations({ route, canAdd, userId }) {
     }, []);
 
     useEffect(() => {
-        if (!participation && participations.length)
-            setParticipation(participations[0]);
-    }, [participations]);
+        const { participationId } = queryString.parse(search);
+        if (!participationId && participations.length) {
+            changeParticipation(participations[0]);
+        } else
+            setParticipation(
+                participations.find((p) => p.id === +participationId)
+            );
+    }, [search, participations]);
 
     const fetchParticipations = () => {
         socket.emit(route, userId, (err) => {
@@ -96,6 +101,16 @@ function Participations({ route, canAdd, userId }) {
         setParticipations(newParticipations);
         if (participation?.id === newParticipation.id)
             setParticipation(newParticipation);
+    };
+
+    const changeParticipation = (newParticipation) => {
+        const currentSearch = queryString.parse(search);
+        history.push(
+            `${history.location.pathname}?${queryString.stringify({
+                ...currentSearch,
+                participationId: newParticipation.id,
+            })}`
+        );
     };
 
     return (
@@ -119,7 +134,7 @@ function Participations({ route, canAdd, userId }) {
                             <>
                                 <ParticipationsButtons
                                     participations={participations}
-                                    setParticipation={setParticipation}
+                                    setParticipation={changeParticipation}
                                 />
 
                                 {participation && (

@@ -1,3 +1,5 @@
+const { formatWebClientURLForCORS } = require('./utils');
+
 require('dotenv').config();
 const express = require('express'),
     app = express(),
@@ -6,7 +8,6 @@ const express = require('express'),
         transports: ['websocket'],
     }),
     redisAdapter = require('socket.io-redis'),
-    bodyParser = require('body-parser'),
     cors = require('cors'),
     helmet = require('helmet'),
     cluster = require('cluster');
@@ -32,11 +33,11 @@ if (cluster.isMaster && NODE_ENV !== 'test') {
 } else {
     io.adapter(redisAdapter(REDIS_URL));
 
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
     app.use(
         cors({
-            origin: [process.env.WEB_CLIENT_URL],
+            origin: formatWebClientURLForCORS(),
         })
     );
     app.use(helmet());

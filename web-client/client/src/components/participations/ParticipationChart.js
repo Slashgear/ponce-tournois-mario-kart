@@ -1,16 +1,19 @@
-import React from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-plugin-datalabels';
 import _ from 'lodash';
 import { useSelector } from 'react-redux';
 import { CSSTheme } from '../../utils/style';
+import {
+    createParticipationChart,
+    getParticipationNbPoints,
+} from '../../utils/utils';
 
 function ParticipationChart({
     record,
     worst,
     average,
     goal,
-    races,
+    current,
     tournamentName,
     nbMaxRaces,
 }) {
@@ -19,7 +22,9 @@ function ParticipationChart({
     const data = {
         labels: Array.from(Array(nbMaxRaces), (_, i) => i + 1),
         datasets: [
-            {
+            createParticipationChart({
+                participation: current,
+                nbMaxRaces,
                 label: tournamentName,
                 fill: false,
                 borderColor: CSSTheme[theme].mainColor,
@@ -27,8 +32,7 @@ function ParticipationChart({
                     align: 'start',
                     color: CSSTheme[theme].mainColor,
                 },
-                data: races.map(((s) => ({ nbPoints }) => (s += nbPoints))(0)),
-            },
+            }),
         ],
     };
 
@@ -73,38 +77,35 @@ function ParticipationChart({
     };
 
     if (record) {
-        data.datasets.push({
-            label: 'Record',
-            fill: false,
-            borderColor: CSSTheme[theme].mainTextColor,
-            datalabels: {
-                align: 'end',
-                color: CSSTheme[theme].mainTextColor,
-            },
-            data: record.Races.map(
-                ((s) => ({ nbPoints }) => (s += nbPoints))(0)
-            ),
-        });
+        data.datasets.push(
+            createParticipationChart({
+                participation: record,
+                nbMaxRaces,
+                label: 'Record',
+                fill: false,
+                borderColor: CSSTheme[theme].mainTextColor,
+                datalabels: {
+                    color: CSSTheme[theme].mainTextColor,
+                    align: 'end',
+                },
+            })
+        );
     }
 
     if (worst) {
-        data.datasets.push({
-            label: 'Pire score',
-            fill: false,
-            borderColor: '#ea4335',
-            datalabels: {
-                align: 'right',
-                color: '#ea4335',
-                formatter: (value, ctx) => {
-                    return ctx.dataIndex === ctx.dataset.data.length - 1
-                        ? value.y
-                        : null;
+        data.datasets.push(
+            createParticipationChart({
+                participation: worst,
+                nbMaxRaces,
+                label: 'Pire score',
+                fill: false,
+                borderColor: CSSTheme[theme].worstChartColor,
+                datalabels: {
+                    color: CSSTheme[theme].worstChartColor,
+                    align: 'start',
                 },
-            },
-            data: worst.Races.map(
-                ((s) => ({ nbPoints }) => (s += nbPoints))(0)
-            ),
-        });
+            })
+        );
     }
 
     if (average) {
@@ -130,9 +131,9 @@ function ParticipationChart({
             label: 'Objectif',
             fill: false,
             borderColor:
-                _.sumBy(races, (race) => race.nbPoints) > goal
-                    ? '#68b684'
-                    : '#f3453f',
+                getParticipationNbPoints(current) > goal
+                    ? CSSTheme[theme].successColor
+                    : CSSTheme[theme].errorColor,
             borderWidth: 2,
             datalabels: { display: false },
             data: Array(nbMaxRaces).fill(goal),

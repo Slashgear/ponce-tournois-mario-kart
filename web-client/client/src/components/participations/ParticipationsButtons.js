@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Row, Col, Hidden, useScreenClass } from 'react-grid-system';
+import { useLocation } from 'react-router';
+import queryString from 'query-string';
 import { useSelector } from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -14,10 +16,27 @@ function ParticipationsButtons({ participations, setParticipation }) {
     const { tournaments } = useSelector((state) => state.tournaments);
     const [index, setIndex] = useState(undefined);
     const [tournament, setTournament] = useState(undefined);
+    const { search } = useLocation();
 
     useEffect(() => {
-        if (index === undefined && tournaments.length) setIndex(0);
-        else {
+        if (index === undefined && tournaments.length) {
+            const { participationId } = queryString.parse(search);
+            if (!participationId) setIndex(0);
+            else {
+                const participation = participations.find(
+                    (p) => p.id === +participationId
+                );
+                const newIndex = _.findIndex(
+                    tournaments,
+                    (t) => t.id === participation?.TournamentId
+                );
+                if (newIndex !== -1) {
+                    setIndex(newIndex);
+                    if (newIndex === index)
+                        setTournament(tournaments[newIndex]);
+                }
+            }
+        } else {
             const newIndex = _.findIndex(
                 tournaments,
                 (t) => t.id === tournament?.id
@@ -39,6 +58,11 @@ function ParticipationsButtons({ participations, setParticipation }) {
             setTournament(newTournament);
         }
     }, [index]);
+
+    useEffect(() => {
+        const { participationId } = queryString.parse(search);
+        if (!participationId) setIndex(0);
+    }, [search]);
 
     const onTournamentChange = ({ value }) => {
         setIndex(_.findIndex(tournaments, { id: value }));

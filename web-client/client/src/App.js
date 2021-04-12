@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Router, Switch, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet';
 import { AnimatePresence } from 'framer-motion';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import moment from 'moment';
-
 import Signup from './components/auth/Signup';
 import Signin from './components/auth/Signin';
-import history from './utils/history';
 import Header from './components/utils/Header';
 import ScrollToTop from './components/utils/ScrollToTop';
 import AdminWrapper from './components/admin/AdminWrapper';
@@ -54,13 +52,13 @@ function App() {
     useEffect(() => {
         dispatch(fetchUser());
         dispatch(fetchTracks());
-        dispatch(fetchPatchNotes());
         dispatch(fetchLatestPatchNote());
         dispatch(fetchTheme());
     }, []);
 
     useEffect(() => {
         dispatch(setSocket(user));
+        if (user?.isAdmin) dispatch(fetchPatchNotes());
     }, [user]);
 
     useEffect(() => {
@@ -113,7 +111,7 @@ function App() {
     return loading ? (
         <></>
     ) : (
-        <Router history={history}>
+        <Router>
             <Helmet
                 titleTemplate="%s - Tournoi des fleurs"
                 defaultTitle="Tournoi des fleurs"
