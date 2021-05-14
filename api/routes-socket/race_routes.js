@@ -14,6 +14,10 @@ module.exports = (io, socket, userId, isAdmin) => {
     });
 
     socket.on('editRace', (data, onError) => {
-        race_ctrl.editRace(io, socket, onError, data);
+        race_ctrl.editRace(io, socket, onError, userId, isAdmin, data);
+    });
+
+    socket.on('deleteRace', (id, onError) => {
+        race_ctrl.deleteRace(io, onError, userId, isAdmin, id);
     });
 };
