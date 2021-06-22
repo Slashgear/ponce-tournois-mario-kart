@@ -21,14 +21,15 @@ module.exports = (io, socket, userId, isAdmin) => {
         participation_ctrl.getLastUserParticipation(socket, onError, user);
     });
 
-    socket.on('editParticipation', (participation, onError) => {
-        participation_ctrl.update(
-            io,
+    socket.on('getParticipations', (participationsInfos, onError) => {
+        participation_ctrl.getParticipations(
             socket,
             onError,
-            participation,
-            userId,
-            isAdmin
+            participationsInfos
         );
+    });
+
+    socket.on('editParticipation', (participation, onError) => {
+        participation_ctrl.update(io, socket, onError, participation, userId);
     });
 };

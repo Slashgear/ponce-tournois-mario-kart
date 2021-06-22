@@ -52,15 +52,22 @@ module.exports = {
             .catch(() => onError('Une erreur est survenue'));
     },
 
-    isAuthenticated: (onError, userId, cb) => {
-        db.User.findByPk(userId)
+    canUserManage: (userId, to) => {
+        return db.User.findByPk(userId, {
+            include: [
+                {
+                    model: db.User,
+                    as: 'Managers',
+                    attributes: ['id'],
+                },
+            ],
+        })
             .then((user) => {
-                if (user) {
-                    cb(user);
-                } else {
-                    onError("Cet utilisateur n'existe pas");
-                }
+                if (!user) return false;
+                if (user.isAdmin) return true;
+                if (user.id === to) return true;
+                return !!user.Managers.find((m) => m.id === to);
             })
-            .catch(() => onError('Une erreur est survenue'));
+            .catch(() => false);
     },
 };

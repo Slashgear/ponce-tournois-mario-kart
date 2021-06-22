@@ -1,9 +1,12 @@
 import { Helmet } from 'react-helmet';
 import { useSelector } from 'react-redux';
+import { canUserManage } from '../../utils/utils';
 import Participations from './Participations';
 
 function PonceParticipations() {
     const { user } = useSelector((state) => state.auth);
+    const { ponce } = useSelector((state) => state.ponce);
+    const canManage = canUserManage(user, ponce?.id);
 
     return (
         <>
@@ -12,7 +15,7 @@ function PonceParticipations() {
             </Helmet>
 
             <Participations
-                canAdd={!!user?.isAdmin}
+                canManage={canManage}
                 route="getPonceParticipations"
             />
         </>

@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const db = require('../models');
-const { getPonce, getUser } = require('../utils');
+const { getPonce, getUser, canUserManage } = require('../utils');
 
 _getLastParticipation = (socket, onError, user, route, errorMessage) => {
     user.getParticipations({
@@ -94,32 +94,65 @@ module.exports = {
         });
     },
 
+    getParticipations: (socket, onError, participationsInfos) => {
+        const { usernames, tournamentsIds } = participationsInfos.reduce(
+            (acc, curr) => {
+                return {
+                    usernames: [...acc.usernames, curr.username],
+                    tournamentsIds: [...acc.tournamentsIds, curr.tournament],
+                };
+            },
+            { usernames: [], tournamentsIds: [] }
+        );
+
+        db.Participation.findAll({
+            include: [
+                {
+                    model: db.User,
+                    where: { username: usernames },
+                    attributes: ['id', 'username'],
+                },
+            ],
+            where: { TournamentId: tournamentsIds },
+        })
+            .then((participations) =>
+                socket.emit('getParticipations', participations)
+            )
+            .catch(() => onError('Une erreur est survenue'));
+    },
+
     update: (
         io,
         socket,
         onError,
         { goal, nbPoints, participationId },
-        userId,
-        isAdmin
+        userId
     ) => {
         db.Participation.findByPk(participationId)
             .then((participation) => {
-                if (
-                    participation &&
-                    (participation.UserId === userId || isAdmin)
-                ) {
-                    participation
-                        .update({ goal, nbPoints })
-                        .then((newParticipation) => {
-                            socket.emit('closeEditParticipationForm');
-                            io.emit('editParticipation', newParticipation);
-                        })
-                        .catch(() => onError('Une erreur est survenue'));
-                } else {
-                    onError(
-                        "Vous n'êtes pas autorisé à effectuer cette action"
-                    );
-                }
+                if (!participation) return onError('Une erreur est survenue');
+                return canUserManage(userId, participation.UserId)
+                    .then((canManage) => {
+                        if (canManage) {
+                            participation
+                                .update({ goal, nbPoints })
+                                .then((newParticipation) => {
+                                    socket.emit('closeEditParticipationForm');
+                                    io.emit(
+                                        'editParticipation',
+                                        newParticipation
+                                    );
+                                })
+                                .catch(() =>
+                                    onError('Une erreur est survenue')
+                                );
+                        } else {
+                            onError(
+                                "Vous n'êtes pas autorisé à effectuer cette action"
+                            );
+                        }
+                    })
+                    .catch(() => onError('Une erreur est survenue'));
             })
             .catch(() => onError('Une erreur est survenue'));
     },

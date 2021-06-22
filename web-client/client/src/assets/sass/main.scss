@@ -1,6 +1,6 @@
 @import 'normalize', 'loader', 'auth', 'header', 'cups', 'tournaments',
     'participations', 'races', 'statistics', 'podiums', 'users', 'patchNotes',
-    'footer', 'settings', 'theme';
+    'footer', 'settings', 'theme', 'charts';
 
 html,
 body,
@@ -82,6 +82,10 @@ textarea:focus {
 input::placeholder,
 textarea::placeholder {
     color: var(--tertiary-text-color);
+}
+
+.--noTransition {
+    transition: none !important;
 }
 
 .btnPrimary {

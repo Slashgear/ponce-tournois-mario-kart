@@ -6,11 +6,18 @@ import ParticipationSkeleton from '../participations/ParticipationSkeleton';
 import TournamentInfos from '../tournaments/TournamentInfos';
 import Participation from '../participations/Participation';
 import Podium from '../podiums/Podium';
-import { getRecord, getWorst, getAverage } from '../../utils/utils';
+import {
+    getRecord,
+    getWorst,
+    getAverage,
+    canUserManage,
+} from '../../utils/utils';
+import useComparisons from '../../hooks/useComparisons';
 
-function LastParticipation({ route, userId }) {
+function LastParticipation({ route, userId, parentLoading }) {
     const { socket } = useSelector((state) => state.socket);
     const { user } = useSelector((state) => state.auth);
+    const { ponce } = useSelector((state) => state.ponce);
     const [participation, setParticipation] = useState(null);
     const [record, setRecord] = useState(null);
     const [worst, setWorst] = useState(null);
@@ -18,7 +25,18 @@ function LastParticipation({ route, userId }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const canAdd = user ? user.id === userId || user.isAdmin : false;
+    const {
+        comparisons,
+        onAddComparison,
+        onRemoveComparison,
+        setComparisons,
+        loading: loadingComparisons,
+    } = useComparisons({
+        tournament: participation?.TournamentId,
+        excludedParticipations: participation ? [participation] : undefined,
+    });
+
+    const canManage = canUserManage(user, userId || ponce?.id);
 
     socket.off('editParticipation').on('editParticipation', (p) => {
         if (participation && p.id === participation.id)
@@ -30,6 +48,17 @@ function LastParticipation({ route, userId }) {
             const newParticipation = _.cloneDeep(participation);
             newParticipation.Races.push(race);
             setParticipation(newParticipation);
+        } else {
+            const idx = comparisons.findIndex(
+                (c) => c.id === race.ParticipationId
+            );
+            if (idx !== -1) {
+                const newComparison = _.cloneDeep(comparisons[idx]);
+                newComparison.Races.push(race);
+                const newComparisons = _.cloneDeep(comparisons);
+                newComparisons.splice(idx, 1, newComparison);
+                setComparisons(newComparisons);
+            }
         }
     });
 
@@ -40,6 +69,22 @@ function LastParticipation({ route, userId }) {
 
             newParticipation.Races.splice(index, 1, race);
             setParticipation(newParticipation);
+        } else {
+            const idx = comparisons.findIndex(
+                (c) => c.id === race.ParticipationId
+            );
+            if (idx !== -1) {
+                const newComparison = _.cloneDeep(comparisons[idx]);
+                const raceIdx = _.findIndex(newComparison.Races, {
+                    id: race.id,
+                });
+                if (raceIdx !== -1) {
+                    newComparison.Races.splice(raceIdx, 1, race);
+                    const newComparisons = _.cloneDeep(comparisons);
+                    newComparisons.splice(idx, 1, newComparison);
+                    setComparisons(newComparisons);
+                }
+            }
         }
     });
 
@@ -73,8 +118,6 @@ function LastParticipation({ route, userId }) {
         fetchParticipation();
     }, [route, userId]);
 
-    useEffect(() => {}, [participation]);
-
     const fetchParticipation = () => {
         socket.emit(route, userId, (err) => {
             setError(err);
@@ -82,7 +125,7 @@ function LastParticipation({ route, userId }) {
         });
     };
 
-    return loading ? (
+    return loading || parentLoading ? (
         <ParticipationSkeleton showButton={false} />
     ) : error ? (
         <Row justify="center">
@@ -96,7 +139,7 @@ function LastParticipation({ route, userId }) {
                 <TournamentInfos defaultTournament={participation.Tournament} />
                 <Podium
                     tournamentId={participation.Tournament.id}
-                    canAdd={canAdd}
+                    canManage={!!user?.isAdmin}
                 />
                 <Participation
                     participation={participation}
@@ -105,7 +148,11 @@ function LastParticipation({ route, userId }) {
                     average={average}
                     tournamentName={participation.Tournament.name}
                     nbMaxRaces={participation.Tournament.nbMaxRaces}
-                    canAdd={canAdd}
+                    canManage={canManage}
+                    comparisons={comparisons}
+                    onAddComparison={onAddComparison}
+                    onRemoveComparison={onRemoveComparison}
+                    loadingComparisons={loadingComparisons}
                 />
             </Col>
         </Row>

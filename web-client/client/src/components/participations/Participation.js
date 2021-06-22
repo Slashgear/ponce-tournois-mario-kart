@@ -5,6 +5,8 @@ import ParticipationChart from './ParticipationChart';
 import ParticipationRace from './ParticipationRace';
 import ParticipationGoal from './ParticipationGoal';
 import ParticipationPoints from './ParticipationPoints';
+import ParticipationChartSkeleton from './ParticipationChartSkeleton';
+import ParticipationComparison from './ParticipationComparison';
 
 function Participation({
     participation,
@@ -13,7 +15,11 @@ function Participation({
     average = null,
     tournamentName,
     nbMaxRaces,
-    canAdd = true,
+    canManage = true,
+    comparisons,
+    onAddComparison,
+    onRemoveComparison,
+    loadingComparisons,
 }) {
     const nbRaces = participation.Races.length;
 
@@ -22,13 +28,13 @@ function Participation({
             <Row>
                 <ParticipationPoints
                     participation={participation}
-                    canAdd={canAdd}
+                    canManage={canManage}
                     nbMaxRaces={nbMaxRaces}
                 />
 
                 <ParticipationGoal
                     participation={participation}
-                    canAdd={canAdd}
+                    canManage={canManage}
                     nbMaxRaces={nbMaxRaces}
                 />
             </Row>
@@ -40,9 +46,38 @@ function Participation({
                         worst={worst}
                         average={average}
                         current={participation}
-                        tournamentName={tournamentName}
+                        tournament={{
+                            id: participation.TournamentId,
+                            name: tournamentName,
+                        }}
                         nbMaxRaces={nbMaxRaces}
                         goal={participation.goal}
+                    />
+
+                    {loadingComparisons ? (
+                        <ParticipationChartSkeleton showAddComparison={false} />
+                    ) : (
+                        comparisons.length > 0 && (
+                            <ParticipationChart
+                                current={participation}
+                                tournament={{
+                                    id: participation.TournamentId,
+                                    name: tournamentName,
+                                }}
+                                nbMaxRaces={nbMaxRaces}
+                                onRemoveComparison={onRemoveComparison}
+                                comparisons={comparisons}
+                            />
+                        )
+                    )}
+
+                    <ParticipationComparison
+                        tournament={participation.TournamentId}
+                        onAddComparison={onAddComparison}
+                        comparedUsers={[
+                            ...comparisons.map((c) => c.User.id),
+                            participation.UserId,
+                        ]}
                     />
                 </Hidden>
 
@@ -60,11 +95,11 @@ function Participation({
                     <ParticipationRace
                         key={race.id}
                         race={race}
-                        canAdd={canAdd}
+                        canManage={canManage}
                     />
                 ))}
 
-                {canAdd &&
+                {canManage &&
                     [...Array(nbMaxRaces - nbRaces)].map((i, index) => (
                         <AddRaceBtn
                             key={index}

@@ -10,15 +10,29 @@ import ParticipationsButtons from './ParticipationsButtons';
 import ParticipationSkeleton from './ParticipationSkeleton';
 import Error from '../utils/Error';
 import Podium from '../podiums/Podium';
+import useComparisons from '../../hooks/useComparisons';
 
-function Participations({ route, canAdd, userId }) {
+function Participations({ route, canManage, userId }) {
     const { socket } = useSelector((state) => state.socket);
+    const { user } = useSelector((state) => state.auth);
     const [participations, setParticipations] = useState([]);
     const [participation, setParticipation] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadingParticipation, setLoadingParticipation] = useState(false);
     const [error, setError] = useState(null);
     const history = useHistory();
     const { search } = useLocation();
+
+    const {
+        comparisons,
+        onAddComparison,
+        onRemoveComparison,
+        setComparisons,
+        loading: loadingComparisons,
+    } = useComparisons({
+        tournament: participation?.TournamentId,
+        excludedParticipations: participation ? [participation] : undefined,
+    });
 
     socket.off('editParticipation').on('editParticipation', (participation) => {
         const p = _.find(participations, { id: participation.id });
@@ -31,6 +45,17 @@ function Participations({ route, canAdd, userId }) {
             const newParticipation = _.cloneDeep(p);
             newParticipation.Races.push(race);
             refreshParticipation(newParticipation);
+        } else {
+            const idx = comparisons.findIndex(
+                (c) => c.id === race.ParticipationId
+            );
+            if (idx !== -1) {
+                const newComparison = _.cloneDeep(comparisons[idx]);
+                newComparison.Races.push(race);
+                const newComparisons = _.cloneDeep(comparisons);
+                newComparisons.splice(idx, 1, newComparison);
+                setComparisons(newComparisons);
+            }
         }
     });
 
@@ -42,6 +67,22 @@ function Participations({ route, canAdd, userId }) {
 
             newParticipation.Races.splice(index, 1, race);
             refreshParticipation(newParticipation);
+        } else {
+            const idx = comparisons.findIndex(
+                (c) => c.id === race.ParticipationId
+            );
+            if (idx !== -1) {
+                const newComparison = _.cloneDeep(comparisons[idx]);
+                const raceIdx = _.findIndex(newComparison.Races, {
+                    id: race.id,
+                });
+                if (raceIdx !== -1) {
+                    newComparison.Races.splice(raceIdx, 1, race);
+                    const newComparisons = _.cloneDeep(comparisons);
+                    newComparisons.splice(idx, 1, newComparison);
+                    setComparisons(newComparisons);
+                }
+            }
         }
     });
 
@@ -78,12 +119,16 @@ function Participations({ route, canAdd, userId }) {
 
     useEffect(() => {
         const { participationId } = queryString.parse(search);
+
         if (!participationId && participations.length) {
             changeParticipation(participations[0]);
-        } else
+        } else {
             setParticipation(
                 participations.find((p) => p.id === +participationId)
             );
+        }
+
+        setTimeout(() => setLoadingParticipation(false), 300);
     }, [search, participations]);
 
     const fetchParticipations = () => {
@@ -105,18 +150,32 @@ function Participations({ route, canAdd, userId }) {
 
     const changeParticipation = (newParticipation) => {
         const currentSearch = queryString.parse(search);
-        history.push(
-            `${history.location.pathname}?${queryString.stringify({
-                ...currentSearch,
-                participationId: newParticipation.id,
-            })}`
-        );
+        if (currentSearch?.participationId !== String(newParticipation.id)) {
+            setLoadingParticipation(true);
+            history.push(
+                `${history.location.pathname}?${queryString.stringify({
+                    ...currentSearch,
+                    participationId: newParticipation.id,
+                })}`
+            );
+        }
     };
 
     return (
         <Container className="app__container">
-            {loading ? (
-                <ParticipationSkeleton />
+            {!loading && !error && participations.length && (
+                <Row justify="center">
+                    <Col xs={12} lg={8}>
+                        <ParticipationsButtons
+                            participations={participations}
+                            setParticipation={changeParticipation}
+                        />
+                    </Col>
+                </Row>
+            )}
+
+            {loading || loadingParticipation ? (
+                <ParticipationSkeleton showButton={loading} />
             ) : error ? (
                 <Row justify="center">
                     <Col xs="content">
@@ -130,40 +189,39 @@ function Participations({ route, canAdd, userId }) {
                     <Col xs={12} lg={8}>
                         {participations.length === 0 ? (
                             <Error message="Vous n'avez participé à aucun tournoi." />
+                        ) : loadingParticipation ? (
+                            <ParticipationSkeleton showButton={false} />
                         ) : (
-                            <>
-                                <ParticipationsButtons
-                                    participations={participations}
-                                    setParticipation={changeParticipation}
-                                />
+                            participation && (
+                                <>
+                                    <TournamentInfos
+                                        defaultTournament={
+                                            participation.Tournament
+                                        }
+                                    />
+                                    <Podium
+                                        tournamentId={
+                                            participation.Tournament.id
+                                        }
+                                        canManage={!!user?.isAdmin}
+                                    />
 
-                                {participation && (
-                                    <>
-                                        <TournamentInfos
-                                            defaultTournament={
-                                                participation.Tournament
-                                            }
-                                        />
-                                        <Podium
-                                            tournamentId={
-                                                participation.Tournament.id
-                                            }
-                                            canAdd={false}
-                                        />
-                                        <Participation
-                                            participation={participation}
-                                            tournamentName={
-                                                participation.Tournament.name
-                                            }
-                                            nbMaxRaces={
-                                                participation.Tournament
-                                                    .nbMaxRaces
-                                            }
-                                            canAdd={canAdd}
-                                        />
-                                    </>
-                                )}
-                            </>
+                                    <Participation
+                                        participation={participation}
+                                        tournamentName={
+                                            participation.Tournament.name
+                                        }
+                                        nbMaxRaces={
+                                            participation.Tournament.nbMaxRaces
+                                        }
+                                        canManage={canManage}
+                                        comparisons={comparisons}
+                                        onAddComparison={onAddComparison}
+                                        onRemoveComparison={onRemoveComparison}
+                                        loadingComparisons={loadingComparisons}
+                                    />
+                                </>
+                            )
                         )}
                     </Col>
                 </Row>

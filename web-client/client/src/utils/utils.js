@@ -87,7 +87,7 @@ export const getAverage = (participations) => {
             nb++;
         });
 
-        average.push(sum / nb);
+        average.push(Math.round(sum / nb));
     }
 
     return average;
@@ -99,33 +99,26 @@ export const getMaxItemsFromScreenClass = (screenClass) => {
     return 100;
 };
 
-export const createParticipationChart = ({
-    participation,
-    nbMaxRaces,
-    ...props
-}) => {
-    const {
-        datalabels: { align, ...datalabelsProps },
-        ...rest
-    } = props;
+export const formatParticipationToChartData = (participation, nbMaxRaces) => {
+    return participation.nbPoints
+        ? Array(nbMaxRaces).fill(participation.nbPoints)
+        : participation.Races.map(
+              ((s) => ({ nbPoints, disconnected }) =>
+                  (s += disconnected ? 0 : nbPoints))(0)
+          );
+};
 
-    return {
-        datalabels: {
-            formatter: (value, ctx) => {
-                if (!participation.nbPoints) return value.y;
-                return ctx.dataIndex === ctx.dataset.data.length - 1
-                    ? value.y
-                    : null;
-            },
-            align: participation.nbPoints ? 'right' : align,
-            ...datalabelsProps,
-        },
-        data: participation.nbPoints
-            ? Array(nbMaxRaces).fill(participation.nbPoints)
-            : participation.Races.map(
-                  ((s) => ({ nbPoints, disconnected }) =>
-                      (s += disconnected ? 0 : nbPoints))(0)
-              ),
-        ...rest,
-    };
+export const canUserManage = (user, to) => {
+    if (!user) return false;
+    if (user.isAdmin) return true;
+    if (user.id === to) return true;
+    return !!user.Managers.find((m) => m.id === to);
+};
+
+export const generateColor = () => {
+    function c() {
+        var hex = Math.floor(Math.random() * 256).toString(16);
+        return ('0' + String(hex)).substr(-2);
+    }
+    return '#' + c() + c() + c();
 };

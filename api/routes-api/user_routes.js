@@ -5,7 +5,7 @@ module.exports = [
     {
         url: '/users',
         method: 'get',
-        func: [auth_ctrl.isAuthenticated, auth_ctrl.isAdmin, user_ctrl.getAll],
+        func: [auth_ctrl.isAuthenticated, user_ctrl.getAll],
     },
 
     {
@@ -34,5 +34,17 @@ module.exports = [
         url: '/user',
         method: 'put',
         func: [auth_ctrl.isAuthenticated, user_ctrl.update],
+    },
+
+    {
+        url: '/user/editors',
+        method: 'post',
+        func: [auth_ctrl.isAuthenticated, user_ctrl.addEditor],
+    },
+
+    {
+        url: '/user/editors/:editorId',
+        method: 'delete',
+        func: [auth_ctrl.isAuthenticated, user_ctrl.removeEditor],
     },
 ];
