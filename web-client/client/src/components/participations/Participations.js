@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Container, Row, Col } from 'react-grid-system';
+import { Row, Col } from 'react-grid-system';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import _ from 'lodash';
@@ -162,10 +162,10 @@ function Participations({ route, canManage, userId }) {
     };
 
     return (
-        <Container className="app__container">
+        <div className="app__container">
             {!loading && !error && participations.length && (
                 <Row justify="center">
-                    <Col xs={12} lg={8}>
+                    <Col xs={12} lg={10} xxl={8}>
                         <ParticipationsButtons
                             participations={participations}
                             setParticipation={changeParticipation}
@@ -186,7 +186,7 @@ function Participations({ route, canManage, userId }) {
                 </Row>
             ) : (
                 <Row justify="center">
-                    <Col xs={12} lg={8}>
+                    <Col xs={12} lg={10} xxl={8}>
                         {participations.length === 0 ? (
                             <Error message="Vous n'avez participé à aucun tournoi." />
                         ) : loadingParticipation ? (
@@ -226,7 +226,7 @@ function Participations({ route, canManage, userId }) {
                     </Col>
                 </Row>
             )}
-        </Container>
+        </div>
     );
 }
 

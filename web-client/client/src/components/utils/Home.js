@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import _ from 'lodash';
 import { Helmet } from 'react-helmet';
 import { useSelector } from 'react-redux';
-import { Container, Col, Row } from 'react-grid-system';
+import { Col, Row } from 'react-grid-system';
 import LastParticipation from '../participations/LastParticipation';
 
 function Home() {
@@ -24,13 +24,13 @@ function Home() {
     }, [showPonce]);
 
     return (
-        <Container className="app__container">
+        <div className="app__container">
             <Helmet>
                 <title>Dernier tournoi</title>
             </Helmet>
 
             <Row justify="center">
-                <Col xs={12} lg={8}>
+                <Col xs={12} lg={10} xxl={8}>
                     <div className="formMessage formMessage--center formMessage__info">
                         Rejoignez le tournoi avec le code{' '}
                         {process.env.REACT_APP_TOURNAMENT_CODE} !
@@ -54,7 +54,7 @@ function Home() {
                 userId={showPonce ? undefined : user?.id}
                 parentLoading={loading}
             />
-        </Container>
+        </div>
     );
 }
 
